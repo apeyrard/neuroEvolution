@@ -29,7 +29,11 @@
 
 # Cmake generated files
 CMakeCache.txt
+CTestTestfile.cmake
 CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
+
+# executables and stuff
+build
