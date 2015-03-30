@@ -21,3 +21,8 @@ before_script:
     - cd build
 
 script: cmake -D MAKE_TEST=false .. && make
+
+# whitelist
+branches:
+  only:
+    - master
