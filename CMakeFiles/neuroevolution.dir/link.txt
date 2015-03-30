@@ -1,0 +1,1 @@
+/usr/bin/c++   -O -Wall -g   CMakeFiles/neuroevolution.dir/main.cpp.o CMakeFiles/neuroevolution.dir/feed_forward_nn.cpp.o CMakeFiles/neuroevolution.dir/neuron.cpp.o  -o neuroevolution -rdynamic 
