@@ -6,5 +6,6 @@ compiler:
 before_install:
     - sudo apt-get update -qq
     - sudo apt-get install cmake
+    - sudo apt-get install libeigen3-dev
 
 script: cmake source && make
