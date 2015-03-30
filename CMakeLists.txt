@@ -14,16 +14,13 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-enable_testing()
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
-
-add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp src/neuron.cpp)
-
-
-target_link_libraries(test_neuroEvolution ${GTEST_BOTH_LIBRARIES})
-
-MESSAGE("${GTEST_BOTH_LIBRARIES}")
+if(MAKE_TESTS)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
+    add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp src/neuron.cpp)
+    target_link_libraries(test_neuroEvolution ${GTEST_BOTH_LIBRARIES})
+endif()
 
 add_test(AllTests bin/test_neuroEvolution)
 
