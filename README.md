@@ -1,6 +1,9 @@
 # neuroEvolution
 Training of neural networks with genetic algorithms
 
+### Status
+[![Build Status](https://travis-ci.org/apeyrard/neuroEvolution.png)](https://travis-ci.org/apeyrard/neuroEvolution)
+
 ## What is done :
 Feed-forward neural network implementation
 Training with back-propagation doesn't work
