@@ -14,14 +14,14 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+add_library(neuroev src/main.cpp src/feed_forward_nn.cpp src/neuron.cpp src/functions.cpp)
+add_executable(neuroEvolution.exe src/main.cpp src/feed_forward_nn.cpp src/neuron.cpp src/functions.cpp)
+
 if(MAKE_TESTS)
     enable_testing()
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
-    add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp src/neuron.cpp src/functions.cpp)
-    target_link_libraries(test_neuroEvolution ${GTEST_BOTH_LIBRARIES})
+    add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp)
+    add_test(AllTests bin/test_neuroEvolution)
+    target_link_libraries(test_neuroEvolution ${GTEST_BOTH_LIBRARIES} neuroev)
 endif()
-
-add_test(AllTests bin/test_neuroEvolution)
-
-add_executable(neuroEvolution src/main.cpp src/feed_forward_nn.cpp src/neuron.cpp src/functions.cpp)

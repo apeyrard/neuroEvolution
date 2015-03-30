@@ -31,7 +31,7 @@ void update_batch(Feed_forward_nn &nn, data batch, double eta)
         nabla_w.push_back(mat);
     }
 
-    for (uint i = 0; i < batch.size();i++)
+    for (int i = 0; i < batch.size();i++)
     {
         std::vector<double> input = batch[i].first;
         std::vector<double> target = batch[i].second;
@@ -42,7 +42,7 @@ void update_batch(Feed_forward_nn &nn, data batch, double eta)
         }
     }
 
-    for (uint i = 0; i < weights.size(); i++)
+    for (int i = 0; i < weights.size(); i++)
     {
         //std::cout << "Weight " << weights[i] << " eta " << eta << " nabla " << nabla_w[i] << std::endl;
         Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> newWeight = weights[i] - (eta/batch.size())*nabla_w[i];
@@ -52,7 +52,7 @@ void update_batch(Feed_forward_nn &nn, data batch, double eta)
     nn.SetWeights(newWeights);
 }
 
-void SGD(Feed_forward_nn &nn, data trainingData, unsigned int epochs, unsigned int batch_size, double eta)
+void SGD(Feed_forward_nn &nn, data trainingData, int epochs, int batch_size, double eta)
 {
     auto engine = std::default_random_engine{};
     for (uint i = 0; i < epochs; i++)
@@ -88,7 +88,7 @@ void SGD(Feed_forward_nn &nn, data trainingData, unsigned int epochs, unsigned i
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-    std::vector<unsigned int> sizes;
+    std::vector<int> sizes;
     sizes.push_back(2);
     sizes.push_back(2);
     sizes.push_back(1);

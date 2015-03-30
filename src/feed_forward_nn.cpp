@@ -3,17 +3,35 @@
 #include <iostream>
 
 namespace neuroev{
-//TODO wrapper to apply function to vector
-//TODO test limit cases (empty nn, 1 level nn....)
-//TODO allow different biases
-//TODO sigmoid as default
-//TODO profile, and maybe remove std to rely on c style arrays, or matrices
-Feed_forward_nn::Feed_forward_nn(std::vector<uint> vecNbNeurons, std::function<double(double)> activation)
+
+Feed_forward_nn::layer Feed_forward_nn::create_layer(std::function<double(double)> activation,
+    int nbNeurons,
+    int nbWeights)
 {
-    m_vecLayers.push_back( create_layer(activation, vecNbNeurons[0], 1) );
-    for (uint i = 1; i < vecNbNeurons.size();i++)
+    layer l;
+    for (int i=0; i < nbNeurons; i++)
     {
-        m_vecLayers.push_back( create_layer(activation, vecNbNeurons[i], m_vecLayers[i-1].size() + 1 ) );  //+1 for bias
+        //random weights
+        vectord weights;
+        for (int j = 0; j < nbWeights; j++)
+        {
+            weights.push_back(dRand(-1.0f,1.0f));
+        }
+
+        Neuron n(weights, activation);
+        l.push_back(n);
+    }
+    return l;
+}
+
+Feed_forward_nn::Feed_forward_nn(std::vector<int> vecNbNeurons, std::function<double(double)> activation)
+{
+    for (uint i = 0; i < vecNbNeurons.size();i++)
+    {
+        if(i==0)
+            m_vecLayers.push_back( create_layer(activation, vecNbNeurons[0], 1) );
+        else
+            m_vecLayers.push_back( create_layer(activation, vecNbNeurons[i], m_vecLayers[i-1].size() + 1 ) );  //+1 for bias
     }
 }
 
@@ -21,18 +39,17 @@ Feed_forward_nn::~Feed_forward_nn()
 {
 }
 
-//TODO replace with weight matrices
 std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_nn::GetWeights() const
 {
     std::vector<Array<double, Dynamic, Dynamic> > result;
     for (uint i = 0; i < m_vecLayers.size();i++)
     {
-        uint rows = m_vecLayers[i].size();
-        uint cols = m_vecLayers[i][0].m_weights.size();
+        int rows = m_vecLayers[i].size();
+        int cols = m_vecLayers[i][0].m_weights.size();
         Array<double, Dynamic, Dynamic> layerWeights(rows, cols);
-        for (uint j = 0; j < m_vecLayers[i].size(); j++)
+        for (int j = 0; j < m_vecLayers[i].size(); j++)
         {
-            for (uint k = 0; k < m_vecLayers[i][j].m_weights.size();k++)
+            for (int k = 0; k < m_vecLayers[i][j].m_weights.size();k++)
             {
                     layerWeights(j, k) = m_vecLayers[i][j].m_weights[k];
             }
@@ -43,13 +60,13 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
 }
 
 //TODO verify size before
-void Feed_forward_nn::SetWeights(std::vector<Array<double, Dynamic, Dynamic> > &weights)
+void Feed_forward_nn::SetWeights(const std::vector<Array<double, Dynamic, Dynamic> > &weights)
 {
-    for (uint i = 0; i < m_vecLayers.size();i++)
+    for (int i = 0; i < m_vecLayers.size();i++)
     {
-        for (uint j = 0; j < m_vecLayers[i].size(); j++)
+        for (int j = 0; j < m_vecLayers[i].size(); j++)
         {
-            for (uint k = 0; k < m_vecLayers[i][j].m_weights.size();k++)
+            for (int k = 0; k < m_vecLayers[i][j].m_weights.size();k++)
             {
                 //std::cout << weights[i](j,k) << std::endl;
                 m_vecLayers[i][j].m_weights[k] = weights[i](j, k);
@@ -67,7 +84,7 @@ Feed_forward_nn::vectord Feed_forward_nn::FeedForward(vectord &inputs, std::vect
     vectord tmpNet;
 
     // Input layer:
-    for (uint i = 0; i < m_vecLayers[0].size();i++)
+    for (int i = 0; i < m_vecLayers[0].size();i++)
     {
         vectord tmpVec;
         tmpVec.push_back(inputs[i]);
@@ -90,11 +107,11 @@ Feed_forward_nn::vectord Feed_forward_nn::FeedForward(vectord &inputs, std::vect
         history->push_back(outputs);
 
     // Other layers
-    for (uint i = 1; i < m_vecLayers.size(); ++i)
+    for (int i = 1; i < m_vecLayers.size(); ++i)
     {
         outputs.clear();
         inputs.push_back(1.0f); //bias
-        for (uint j = 0; j < m_vecLayers[i].size(); ++j)
+        for (int j = 0; j < m_vecLayers[i].size(); ++j)
         {
             if(netList)
             {
@@ -122,7 +139,7 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
     std::vector<Array<double, Dynamic, Dynamic> > weights = GetWeights();
     std::vector<Array<double, Dynamic, Dynamic> > nabla_w;
 
-    for (uint i = 0; i < weights.size(); i++)
+    for (int i = 0; i < weights.size(); i++)
     {
         int rows = weights[i].rows();
         int cols = weights[i].cols();
@@ -138,7 +155,7 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
 
     //Backward pass
     RowArrayXd delta(targets.size());
-    for (uint i = 0; i < targets.size();i++)
+    for (int i = 0; i < targets.size();i++)
     {
         vectord diff = vectorize<double>(cost_derivative, history.back(), targets);
         delta(i)=(diff[i] * activation_prime(listNet.back()[i]) );
@@ -146,25 +163,25 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
 
     for (int j = 0; j < delta.size();j++)
     {
-        for (uint k = 0; k < history[history.size()-2].size(); k++)
+        for (int k = 0; k < history[history.size()-2].size(); k++)
         {
             nabla_w.back()(j,k) = delta(j) * history[history.size()-2][k];
         }
     }
 
-    for (uint i = 2; i < m_vecLayers.size();i++)
+    for (int i = 2; i < m_vecLayers.size();i++)
     {
-        uint x = m_vecLayers.size()-i;
+        int x = m_vecLayers.size()-i;
         vectord z = listNet[x];
         RowArrayXd spv(z.size());
-        for (uint j = 0; j < z.size();j++)
+        for (int j = 0; j < z.size();j++)
         {
             spv(j) = (activation_prime(z[j]));
         }
-        for (uint j = 0; j < delta.size();j++)
+        for (int j = 0; j < delta.size();j++)
         {
             double tmp = 0;
-            for(uint k = 0; k < weights[x+1].rows();k++)
+            for(int k = 0; k < weights[x+1].rows();k++)
             {
                 tmp += delta(j) * weights[x+1](j,k);
             }
@@ -173,7 +190,7 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
 
         for (int j = 0; j < delta.size();j++)
         {
-            for (uint k = 0; k < history[history.size()-1-x].size(); k++)
+            for (int k = 0; k < history[history.size()-1-x].size(); k++)
             {
                 nabla_w[x](j,k) = delta(j) * history[history.size()-1-x][k];
             }
