@@ -3,10 +3,15 @@
 #include <vector>
 #include <functional>
 
+#include "functions.h"
+
+namespace neuroev
+{
+
 class Neuron
 {
 public:
-    Neuron(std::function<double(double)> activationFunction, std::vector<double> weights);
+    Neuron(std::vector<double> weights, std::function<double(double)> activationFunction=sigmoid);
     ~Neuron();
 
     double computeOutput(std::vector<double>const &inputs, double* net=nullptr)const;
@@ -15,3 +20,5 @@ public:
 protected:
     std::function<double(double)> m_activationFunction;
 };
+
+}

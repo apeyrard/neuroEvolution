@@ -5,32 +5,15 @@
 #include <eigen3/Eigen/Core>
 #include <time.h>
 #include <stdlib.h>
-#include "feed_forward_nn.h"
+
+#include "neuroevolution.h"
 
 #include <iostream>
 
+using namespace neuroev;
+
 using data = std::vector<std::pair<std::vector<double>, std::vector<double> > >;
 
-double sigmoid(double x)
-{
-    double p = 1.0f;
-    return ( 1.0f / ( 1.0f + exp(-x / p) ) );
-}
-
-double sigmoid_prime(double x)
-{
-    return (sigmoid(x) * (1 - sigmoid(x)));
-}
-
-std::vector<double> cost_derivative(std::vector<double> outputs, std::vector<double> targets)
-{
-    std::vector<double> results;
-    for (unsigned int i = 0; i < outputs.size();i++)
-    {
-        results.push_back(outputs[i]-targets[i]);
-    }
-    return results;
-}
 
 //TODO nn ref const ?
 void update_batch(Feed_forward_nn &nn, data batch, double eta)
@@ -52,7 +35,7 @@ void update_batch(Feed_forward_nn &nn, data batch, double eta)
     {
         std::vector<double> input = batch[i].first;
         std::vector<double> target = batch[i].second;
-        std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > delta_nabla_w = nn.back_propagate(input, target, cost_derivative, sigmoid_prime);
+        std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > delta_nabla_w = nn.back_propagate(input, target);
         for (uint j = 0; j < nabla_w.size();j++)
         {
             nabla_w[j] += delta_nabla_w[j];
@@ -140,7 +123,7 @@ int main(int argc, char *argv[])
     out.push_back(1.0f);
     myData.push_back(std::make_pair(in, out));
 
-    Feed_forward_nn nn  = Feed_forward_nn(sigmoid, sizes);
+    Feed_forward_nn nn  = Feed_forward_nn(sizes);
     SGD(nn, myData, 100000, 1, 0.01);
 
     // testing OR

@@ -2,12 +2,13 @@
 
 #include <iostream>
 
+namespace neuroev{
 //TODO wrapper to apply function to vector
 //TODO test limit cases (empty nn, 1 level nn....)
 //TODO allow different biases
 //TODO sigmoid as default
 //TODO profile, and maybe remove std to rely on c style arrays, or matrices
-Feed_forward_nn::Feed_forward_nn(std::function<double(double)> activation, std::vector<uint> vecNbNeurons)
+Feed_forward_nn::Feed_forward_nn(std::vector<uint> vecNbNeurons, std::function<double(double)> activation)
 {
     m_vecLayers.push_back( create_layer(activation, vecNbNeurons[0], 1) );
     for (uint i = 1; i < vecNbNeurons.size();i++)
@@ -116,7 +117,7 @@ Feed_forward_nn::vectord Feed_forward_nn::FeedForward(vectord &inputs, std::vect
     return outputs;
 }
 
-std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_nn::back_propagate(vectord inputs, vectord targets, std::function<vectord(vectord, vectord)> cost_derivative, std::function<double(double)> activation_prime)
+std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_nn::back_propagate(vectord inputs, vectord targets, std::function<double(double, double)> cost_derivative, std::function<double(double)> activation_prime)
 {
     std::vector<Array<double, Dynamic, Dynamic> > weights = GetWeights();
     std::vector<Array<double, Dynamic, Dynamic> > nabla_w;
@@ -139,7 +140,7 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
     RowArrayXd delta(targets.size());
     for (uint i = 0; i < targets.size();i++)
     {
-        vectord diff = cost_derivative(history.back(), targets);
+        vectord diff = vectorize<double>(cost_derivative, history.back(), targets);
         delta(i)=(diff[i] * activation_prime(listNet.back()[i]) );
     }
 
@@ -179,4 +180,6 @@ std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_
         }
     }
     return nabla_w;
+}
+
 }
