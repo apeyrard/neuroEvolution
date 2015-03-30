@@ -8,7 +8,7 @@ set (CMAKE_BUILD_TYPE debug)
 #set (CMAKE_VERBOSE_MAKEFILE ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set( CMAKE_CXX_FLAGS   "-O3 -Wall" )
+    set( CMAKE_CXX_FLAGS "-O2 -Wall -Wno-sign-compare" )
     add_definitions(-std=gnu++0x)
 endif()
 
@@ -18,10 +18,10 @@ if(MAKE_TESTS)
     enable_testing()
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
-    add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp src/neuron.cpp)
+    add_executable(test_neuroEvolution tests/test_neuroEvolution.cpp src/neuron.cpp src/functions.cpp)
     target_link_libraries(test_neuroEvolution ${GTEST_BOTH_LIBRARIES})
 endif()
 
 add_test(AllTests bin/test_neuroEvolution)
 
-add_executable(neuroEvolution src/main.cpp src/feed_forward_nn.cpp src/neuron.cpp)
+add_executable(neuroEvolution src/main.cpp src/feed_forward_nn.cpp src/neuron.cpp src/functions.cpp)

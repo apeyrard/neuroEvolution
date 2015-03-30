@@ -4,7 +4,12 @@
 #include <functional>
 #include <vector>
 #include <eigen3/Eigen/Core>
+
 #include "neuron.h"
+#include "functions.h"
+
+namespace neuroev
+{
 
 class Feed_forward_nn
 {
@@ -14,14 +19,6 @@ class Feed_forward_nn
     using uint = unsigned int;
     using layer = std::vector<Neuron>;
     using vectord = std::vector<double>;
-
-    double randDouble(double min, double max)
-    {
-        double random = static_cast<double>(rand()) / static_cast<double>(RAND_MAX);
-        random *= (max - min);
-        random += min;
-        return random;
-    }
 
     layer create_layer(std::function<double(double)> activation,
         uint nbNeurons,
@@ -34,17 +31,17 @@ class Feed_forward_nn
             vectord weights;
             for (uint j = 0; j < nbWeights; j++)
             {
-                weights.push_back(randDouble(-1.0f,1.0f));
+                weights.push_back(dRand(-1.0f,1.0f));
             }
 
-            Neuron n(activation, weights);
+            Neuron n(weights, activation);
             l.push_back(n);
         }
         return l;
     }
 
 public:
-    Feed_forward_nn(std::function<double(double)> activation, std::vector<uint> sizeList);
+    Feed_forward_nn(std::vector<uint> sizeList, std::function<double(double)> activation=sigmoid);
 
     ~Feed_forward_nn();
 
@@ -53,8 +50,10 @@ public:
 
     vectord FeedForward(vectord &inputs, std::vector<vectord >* history=nullptr, std::vector<vectord >* netList=nullptr);
 
-    std::vector<Array<double, Dynamic, Dynamic> > back_propagate(vectord inputs, vectord targets, std::function<vectord(vectord, vectord)> cost_derivative, std::function<double(double)> activation_prime);
+    std::vector<Array<double, Dynamic, Dynamic> > back_propagate(vectord inputs, vectord targets, std::function<double(double, double)> cost_derivative=mean_square_derivative, std::function<double(double)> activation_prime=sigmoid_prime);
 
 private:
     std::vector<layer> m_vecLayers;
 };
+
+}
