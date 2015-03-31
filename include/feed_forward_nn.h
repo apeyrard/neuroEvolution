@@ -20,18 +20,20 @@ class Feed_forward_nn
     using vectord = std::vector<double>;
 
 public:
-    Feed_forward_nn(std::vector<int> sizeList, std::function<double(double)> activation=sigmoid);
+    Feed_forward_nn(std::vector<int> sizeList, std::function<double(double)> activation=sigmoid, int bias = 1);
 
     ~Feed_forward_nn();
 
     std::vector<Array<double, Dynamic, Dynamic> > GetWeights() const;
     void SetWeights(const std::vector<Array<double, Dynamic, Dynamic> > &weights);
 
-    vectord FeedForward(vectord &inputs, std::vector<vectord >* history=nullptr, std::vector<vectord >* netList=nullptr);
+    vectord FeedForward(vectord inputs, std::vector<vectord >* history=nullptr);
 
-    std::vector<Array<double, Dynamic, Dynamic> > back_propagate(vectord inputs, vectord targets, std::function<double(double, double)> cost_derivative=mean_square_derivative, std::function<double(double)> activation_prime=sigmoid_prime);
+    void back_propagate(vectord inputs, vectord targets, double eta=0.3, double momentum=0.9, std::function<double(double, double)> cost_derivative=mean_square_derivative, std::function<double(double)> activation_prime=sigmoid_prime);
 
 private:
+    int m_bias; //nb of biases usually 1
+    std::vector<Array<double, Dynamic, Dynamic> > m_oldChange;
     std::vector<layer> m_vecLayers;
 
     layer create_layer(std::function<double(double)> activation,

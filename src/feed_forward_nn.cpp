@@ -15,7 +15,7 @@ Feed_forward_nn::layer Feed_forward_nn::create_layer(std::function<double(double
         vectord weights;
         for (int j = 0; j < nbWeights; j++)
         {
-            weights.push_back(dRand(-1.0f,1.0f));
+            weights.push_back(dRand(-1.0,1.0));
         }
 
         Neuron n(weights, activation);
@@ -24,15 +24,17 @@ Feed_forward_nn::layer Feed_forward_nn::create_layer(std::function<double(double
     return l;
 }
 
-Feed_forward_nn::Feed_forward_nn(std::vector<int> vecNbNeurons, std::function<double(double)> activation)
+Feed_forward_nn::Feed_forward_nn(std::vector<int> vecNbNeurons, std::function<double(double)> activation, int bias)
+    : m_bias(bias)
 {
-    for (uint i = 0; i < vecNbNeurons.size();i++)
-    {
-        if(i==0)
-            m_vecLayers.push_back( create_layer(activation, vecNbNeurons[0], 1) );
-        else
-            m_vecLayers.push_back( create_layer(activation, vecNbNeurons[i], m_vecLayers[i-1].size() + 1 ) );  //+1 for bias
+    for (uint i = 1; i < vecNbNeurons.size();i++)
+    {   std::cout<<"Creating layer " << i << " n : " << vecNbNeurons[i] << " i : " << vecNbNeurons[i-1] + m_bias << std::endl;
+        m_vecLayers.push_back( create_layer(activation, vecNbNeurons[i], vecNbNeurons[i-1] + bias ) );
+        Array<double, Dynamic, Dynamic> a(vecNbNeurons[i], vecNbNeurons[i-1] + bias);
+        a.setZero();
+        m_oldChange.push_back(a);
     }
+
 }
 
 Feed_forward_nn::~Feed_forward_nn()
@@ -75,128 +77,106 @@ void Feed_forward_nn::SetWeights(const std::vector<Array<double, Dynamic, Dynami
     }
 }
 
-Feed_forward_nn::vectord Feed_forward_nn::FeedForward(vectord &inputs, std::vector<vectord >* history, std::vector<vectord >* netList)
+Feed_forward_nn::vectord Feed_forward_nn::FeedForward(vectord inputs, std::vector<vectord >* history)
 {
     if(history)
         history->push_back(inputs);
 
     vectord outputs;
-    vectord tmpNet;
 
-    // Input layer:
-    for (int i = 0; i < m_vecLayers[0].size();i++)
-    {
-        vectord tmpVec;
-        tmpVec.push_back(inputs[i]);
-        if(netList)
-        {
-            double tmp;
-            outputs.push_back(m_vecLayers[0][i].computeOutput(tmpVec, &tmp));
-            tmpNet.push_back(tmp);
-        }
-        else
-            outputs.push_back(m_vecLayers[0][i].computeOutput(tmpVec));
-    }
-    inputs = outputs;
-
-
-    if(netList)
-        netList->push_back(tmpNet);
-    tmpNet.clear();
-    if(history)
-        history->push_back(outputs);
-
-    // Other layers
-    for (int i = 1; i < m_vecLayers.size(); ++i)
+    for (int i = 0; i < m_vecLayers.size(); ++i)
     {
         outputs.clear();
-        inputs.push_back(1.0f); //bias
+        for (int j = 0; j < m_bias; ++j)
+            inputs.push_back(1.0); //biases
+
         for (int j = 0; j < m_vecLayers[i].size(); ++j)
         {
-            if(netList)
-            {
-                double tmp;
-                outputs.push_back(m_vecLayers[i][j].computeOutput(inputs, &tmp));
-                tmpNet.push_back(tmp);
-            }
-            else
-                outputs.push_back(m_vecLayers[i][j].computeOutput(inputs));
+            outputs.push_back(m_vecLayers[i][j].computeOutput(inputs));
         }
         inputs = outputs;
 
-        if(netList)
-            netList->push_back(tmpNet);
-        tmpNet.clear();
         if(history)
+        {
+            for (int j = 0; j < m_bias; ++j)
+                outputs.push_back(1.0); //biases
             history->push_back(outputs);
+        }
+
     }
 
     return outputs;
 }
 
-std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > Feed_forward_nn::back_propagate(vectord inputs, vectord targets, std::function<double(double, double)> cost_derivative, std::function<double(double)> activation_prime)
+//TODO Vectorize everything
+void Feed_forward_nn::back_propagate(vectord inputs, vectord targets, double eta, double momentum, std::function<double(double, double)> cost_derivative, std::function<double(double)> activation_prime)
 {
-    std::vector<Array<double, Dynamic, Dynamic> > weights = GetWeights();
-    std::vector<Array<double, Dynamic, Dynamic> > nabla_w;
-
-    for (int i = 0; i < weights.size(); i++)
-    {
-        int rows = weights[i].rows();
-        int cols = weights[i].cols();
-        Array<double, Dynamic, Dynamic> mat(rows, cols);
-        mat.setZero(rows, cols);
-        nabla_w.push_back(mat);
-    }
-
-    std::vector<vectord> history;
-    std::vector<vectord> listNet;
     //Forward pass
-    FeedForward(inputs, &history, &listNet);
+    std::vector<vectord> history;
+    std::vector<double> result = FeedForward(inputs, &history);
+    //std::cout << "res " << result.back() << std::endl;
+    //std::cout << "hist back " << history.back()[0] << std::endl;
 
     //Backward pass
-    RowArrayXd delta(targets.size());
-    for (int i = 0; i < targets.size();i++)
-    {
-        vectord diff = vectorize<double>(cost_derivative, history.back(), targets);
-        delta(i)=(diff[i] * activation_prime(listNet.back()[i]) );
-    }
+    std::vector<Array<double, Dynamic, Dynamic> > oldWeights = GetWeights();
+    auto newWeights = oldWeights;
+    RowArrayXd oldErrors;
 
-    for (int j = 0; j < delta.size();j++)
+    //Output layer
     {
-        for (int k = 0; k < history[history.size()-2].size(); k++)
+        RowArrayXd error(m_vecLayers.back().size());
+        vectord diff = vectorize<double>(cost_derivative,   history[2], targets);
+        for (int i = 0; i < error.size();i++)
         {
-            nabla_w.back()(j,k) = delta(j) * history[history.size()-2][k];
+            //std::cout << "diff : " << diff[i] << std::endl;
+            error(i)=(diff[i] *     activation_prime(history.back()[i]) );
+            //std::cout << "error : " << error(i) << std::endl;
+        }
+        oldErrors = error;
+    }
+    //Updating weight
+    for (int i = 0; i < oldErrors.size(); ++i)
+    {
+        for(int j = 0; j < newWeights.back().cols();++j)
+        {
+            //std::cout << "oldW : " << oldWeights.back()(i,j) << std::endl;
+            //std::cout << "oldErr" << oldErrors[i] << std::endl;
+            //std::cout << "truc" << history[history.size()-2][j] << std::endl;
+            newWeights.back()(i, j) = oldWeights.back()(i,j) + -eta * (oldErrors(i)*history[history.size()-2][j]) + momentum * m_oldChange.back()(i,j);
+            m_oldChange.back()(i,j) = newWeights.back()(i,j) - oldWeights.back()(i,j);
+            //std::cout << "new old: " << m_oldChange.back()(i,j) << std::endl;
+            //std::cout << "newW : " << newWeights.back()(i,j) << std::endl;
         }
     }
 
+    //hidden layers
     for (int i = 2; i < m_vecLayers.size();i++)
     {
         int x = m_vecLayers.size()-i;
-        vectord z = listNet[x];
-        RowArrayXd spv(z.size());
-        for (int j = 0; j < z.size();j++)
+        RowArrayXd error(m_vecLayers[x].size());
+        for (int j = 0; i < error.size(); ++j)
         {
-            spv(j) = (activation_prime(z[j]));
-        }
-        for (int j = 0; j < delta.size();j++)
-        {
-            double tmp = 0;
-            for(int k = 0; k < weights[x+1].rows();k++)
+            error(j) = 0;
+            for (int k = 0; k < oldErrors.size(); ++k)
             {
-                tmp += delta(j) * weights[x+1](j,k);
+                error(j) += oldErrors(k)*oldWeights[x+1](k, j);
             }
-            delta(j) = tmp * spv(j);
+            error(j) *= activation_prime(history[x][j]);
         }
 
-        for (int j = 0; j < delta.size();j++)
+        //Updating weight
+        for (int j = 0; j < error.size(); ++j)
         {
-            for (int k = 0; k < history[history.size()-1-x].size(); k++)
+            for(int k = 0; k < newWeights[x].cols();++k)
             {
-                nabla_w[x](j,k) = delta(j) * history[history.size()-1-x][k];
+                newWeights[x](j, k) = oldWeights[x](j,k) + -eta * (error(j)*history[x-1][k]) + momentum * m_oldChange[x](j, k);
+                m_oldChange[x](j,k) = newWeights[x](j, k) - oldWeights[x](j,k);
             }
         }
+        oldErrors = error;
     }
-    return nabla_w;
+
+    SetWeights(newWeights);
 }
 
 }

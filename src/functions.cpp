@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "functions.h"
+#include <iostream>
 
 namespace neuroev
 {
@@ -18,6 +19,8 @@ double sigmoid_prime(double x)
 
 double mean_square_derivative(double output, double target)
 {
+    //std::cout << "output : " << output << std::endl;
+    //std::cout << "target : " << target << std::endl;
     return output - target;
 }
 

@@ -16,7 +16,7 @@ using data = std::vector<std::pair<std::vector<double>, std::vector<double> > >;
 
 
 //TODO nn ref const ?
-void update_batch(Feed_forward_nn &nn, data batch, double eta)
+/*void update_batch(Feed_forward_nn &nn, data batch, double eta)
 {
     std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > weights = nn.GetWeights();
     std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > nabla_w;
@@ -83,49 +83,37 @@ void SGD(Feed_forward_nn &nn, data trainingData, int epochs, int batch_size, dou
             update_batch(nn, batches[j], eta);
         }
     }
-}
+}*/
 
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
     std::vector<int> sizes;
-    sizes.push_back(2);
-    sizes.push_back(2);
+    sizes.push_back(1);
+    sizes.push_back(5);
     sizes.push_back(1);
 
-    data myData;
-    // LEARNING OR
-    std::vector<double> in;
-    std::vector<double> out;
-    in.push_back(0.0f);
-    in.push_back(0.0f);
-    out.push_back(0.0f);
-    myData.push_back(std::make_pair(in, out));
-
-    in.clear();
-    out.clear();
-    in.push_back(1.0f);
-    in.push_back(1.0f);
-    out.push_back(1.0f);
-    myData.push_back(std::make_pair(in, out));
-
-    in.clear();
-    out.clear();
-    in.push_back(1.0f);
-    in.push_back(0.0f);
-    out.push_back(1.0f);
-    myData.push_back(std::make_pair(in, out));
-
-    in.clear();
-    out.clear();
-    in.push_back(0.0f);
-    in.push_back(1.0f);
-    out.push_back(1.0f);
-    myData.push_back(std::make_pair(in, out));
 
     Feed_forward_nn nn  = Feed_forward_nn(sizes);
-    SGD(nn, myData, 100000, 1, 0.01);
 
+    //Learning OR
+    for (int i = 0; i < 10000000; ++i)
+    {
+        int a = rand() % 2;
+        int b = rand() % 2;
+        int result;
+        if (((a==0) && (b==0)) || ((a==1)&&(b==1)))
+            result = 0;
+        else
+            result = 1;
+
+        std::vector<double> inputs;
+        std::vector<double> targets;
+        inputs.push_back(a);
+        inputs.push_back(b);
+        targets.push_back(result);
+        nn.back_propagate(inputs, targets);
+    }
     // testing OR
     int ok = 0;
     int ko = 0;
@@ -137,11 +125,17 @@ int main(int argc, char *argv[])
         std::vector<double> source;
         source.push_back(a);
         source.push_back(b);
-        if ((a==0) && (b==0))
+        if (((a==0) && (b==0)) || ((a==1)&&(b==1)))
             result = 0;
         else
             result = 1;
         double result2 = nn.FeedForward(source).back();
+        if (result2 > 0.9)
+            result2 = 1.0;
+        else if (result2 < 0.1)
+            result2 = 0.0;
+        else
+            result2 = 0.5;
         printf("result : %f\n", result2);
 
         if (result == result2)

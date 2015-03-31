@@ -134,46 +134,40 @@ TEST(Feed_forward_nn, simpleNN)
 
     std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > weights(n.GetWeights());
 
-    EXPECT_EQ(weights.size(),3);
+    EXPECT_EQ(weights.size(),2);
 
     std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > newWeights;
-    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> a(2, 1);
-    a(0, 0) = 98.5;
-    a(1, 0) = -50.12;
+
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> a(2, 3);
+    a(0, 0) = 0.12;
+    a(0, 1) = -5.19;
+    a(0, 2) = 3.1415;
+    a(1, 0) = 7.0;
+    a(1, 1) = 0.0;
+    a(1, 2) = 321.12;
     newWeights.push_back(a);
 
-    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> b(2, 3);
-    b(0, 0) = 0.12;
-    b(0, 1) = -5.19;
-    b(0, 2) = 3.1415;
-    b(1, 0) = 7.0;
-    b(1, 1) = 0.0;
-    b(1, 2) = 321.12;
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> b(1, 3);
+    b(0, 0) = 1.0;
+    b(0, 1) = 42.42;
+    b(0, 2) = -48.0;
     newWeights.push_back(b);
-
-    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> c(1, 3);
-    c(0, 0) = 1.0;
-    c(0, 1) = 42.42;
-    c(0, 2) = -48.0;
-    newWeights.push_back(c);
 
     n.SetWeights(newWeights);
     weights.clear();
     weights = n.GetWeights();
 
-    EXPECT_EQ(weights.size(),3);
+    EXPECT_EQ(weights.size(),2);
 
-    EXPECT_DOUBLE_EQ(weights[0](0, 0), 98.5);
-    EXPECT_DOUBLE_EQ(weights[0](1, 0), -50.12);
-    EXPECT_DOUBLE_EQ(weights[1](0, 0), 0.12);
-    EXPECT_DOUBLE_EQ(weights[1](0, 1), -5.19);
-    EXPECT_DOUBLE_EQ(weights[1](0, 2), 3.1415);
-    EXPECT_DOUBLE_EQ(weights[1](1, 0), 7.0);
-    EXPECT_DOUBLE_EQ(weights[1](1, 1), 0.0);
-    EXPECT_DOUBLE_EQ(weights[1](1, 2), 321.12);
-    EXPECT_DOUBLE_EQ(weights[2](0, 0), 1.0);
-    EXPECT_DOUBLE_EQ(weights[2](0, 1), 42.42);
-    EXPECT_DOUBLE_EQ(weights[2](0, 2), -48.0);
+    EXPECT_DOUBLE_EQ(weights[0](0, 0), 0.12);
+    EXPECT_DOUBLE_EQ(weights[0](0, 1), -5.19);
+    EXPECT_DOUBLE_EQ(weights[0](0, 2), 3.1415);
+    EXPECT_DOUBLE_EQ(weights[0](1, 0), 7.0);
+    EXPECT_DOUBLE_EQ(weights[0](1, 1), 0.0);
+    EXPECT_DOUBLE_EQ(weights[0](1, 2), 321.12);
+    EXPECT_DOUBLE_EQ(weights[1](0, 0), 1.0);
+    EXPECT_DOUBLE_EQ(weights[1](0, 1), 42.42);
+    EXPECT_DOUBLE_EQ(weights[1](0, 2), -48.0);
 
     std::vector<double> result;
     std::vector<double> inputs;
@@ -182,27 +176,73 @@ TEST(Feed_forward_nn, simpleNN)
     inputs.push_back(14.12);
     inputs.push_back(-19.5);
 
-    result = n.FeedForward(inputs, &history, &netList);
+    result = n.FeedForward(inputs, &history);
 
-    EXPECT_EQ(history.size(),4);
-    EXPECT_EQ(netList.size(),3);
+    EXPECT_EQ(history.size(),3);
     EXPECT_EQ(history[0].size(),2);
     EXPECT_EQ(history[1].size(),2);
-    EXPECT_EQ(history[2].size(),2);
-    EXPECT_EQ(history[3].size(),1);
-    EXPECT_EQ(netList[0].size(),2);
-    EXPECT_EQ(netList[1].size(),2);
-    EXPECT_EQ(netList[2].size(),1);
+    EXPECT_EQ(history[2].size(),1);
 
-    EXPECT_DOUBLE_EQ(history[0][0], 14.12);
-    EXPECT_DOUBLE_EQ(history[0][1], -19.5);
-
-    EXPECT_DOUBLE_EQ(netList[0][0], 1390.82);
-    EXPECT_DOUBLE_EQ(netList[0][1], 977.34);
-    EXPECT_DOUBLE_EQ(history[1][0], sigmoid(1390.82));
-    EXPECT_DOUBLE_EQ(history[1][1], sigmoid(977.34));
+    //Values hard to check since double, but seem ok
+    //when outputting neuron values*/
 }
 
+TEST(Feed_forward_nn, knownNN)
+{
+    std::vector<int> nbNeurons;
+    nbNeurons.push_back(2);
+    nbNeurons.push_back(2);
+    nbNeurons.push_back(1);
+    Feed_forward_nn n(nbNeurons, sigmoid, 0);
+
+    std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > weights(n.GetWeights());
+
+    EXPECT_EQ(weights.size(),2);
+
+    std::vector<Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> > newWeights;
+
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> a(2, 2);
+    a(0, 0) = 0.1;
+    a(0, 1) = 0.8;
+    a(1, 0) = 0.4;
+    a(1, 1) = 0.6;
+    newWeights.push_back(a);
+
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic> b(1, 2);
+    b(0, 0) = 0.3;
+    b(0, 1) = 0.9;
+    newWeights.push_back(b);
+
+    n.SetWeights(newWeights);
+    weights.clear();
+
+    std::vector<double> result;
+    std::vector<double> inputs;
+    std::vector<std::vector<double> > history;
+    inputs.push_back(0.35);
+    inputs.push_back(0.9);
+
+    result = n.FeedForward(inputs, &history);
+
+    EXPECT_DOUBLE_EQ(result.back(), 0.69);
+    EXPECT_DOUBLE_EQ(history[2][0], 0.69);
+    EXPECT_DOUBLE_EQ(history[1][0], 0.68);
+    EXPECT_DOUBLE_EQ(history[1][1], 0.6637);
+    EXPECT_DOUBLE_EQ(history[0][0], 0.35);
+    EXPECT_DOUBLE_EQ(history[0][1], 0.9);
+
+    std::vector<double> target;
+    target.push_back(0.5);
+
+    n.back_propagate(inputs, target, 1.0);
+
+    history.clear();
+    result = n.FeedForward(inputs, &history);
+
+    EXPECT_DOUBLE_EQ(result.back(), 0.68205);
+
+
+}
 
 
 int main(int argc, char **argv)
